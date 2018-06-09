@@ -5,6 +5,7 @@ eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt i
 officia deserunt mollit anim id est laborum. """
 
 $value: 1.333
+$value: 1,377
 $var-nasd: "3"
 $name: "123"
 $asda: "asd" ; komentarz
@@ -12,42 +13,63 @@ $asda: "asd" ; komentarz
 $value: 314
 $boolean: true
 $filename: " "
+$root: "/home/"
+$samples-path: "${root}/asdasd"
 
+; asdadadas adad
 # Heading 1 #
-
 
 ## Heading 2 ##
 
-
 ### Heading 3 ###
 
+Litwo! Ojczyzno moja! Ty --strikeout-- jesteś /italic/ **emphesize** jak zdrowie. Nazywał się rumieniec oblekły. Tadeusz, by stary Rejtan,
+Że miał wielką, i z sobą poufali. Zaczęli nawet suknie stare. Żałośnie było jeszcze kołyszą się teraz się rąk muskała włosów pukle nie bijem,
+jest zagadką, młódź cierpi na utrzymanie. Lecz wtenczas panowało __underscore__ takie jechać polowanie i zaraz mogłem pieszo do pocałowani
+przyrzekł na wieczerzę. Rykow jadł smaczno, mało w drewnianej szafie poznał u tamtej widział krótki, jasnozłoty a młodszej przysunąwszy z
+dziecinną radością pociągnął za mych czasów w skroń białą ${root} wznosząca nad umysłami wielką moc ta chwała należy urządzając we dworskim
+względów doszli potem cały naród przepuszcza odbiera naprzód dzieci mało w charta. Tak każe u wniścia alkowy i psy zawołane. Teraz ręce
+rozkrzyżował i obiegłszy dziedziniec zawrócił przed nim szedł z Polski jak roratne świéce. Pierwsza z łowów wracając trafia się, jak kity z
+jutrzenką napotka się strony obie Tadeusz Telimenie, lecz patrzył na to mówiąc, że teraz wzrostem dorodniejsza bo tak nas starych zmienia
+czy go czeladka ściskała zanosząc się o `var x = 7` książki.
 
+1. Hello World
+2. Heloo world
+3. Hello World
 
+* Item 1
+  * Item 1.1
+  * Item 1.2
+  * Item 1.3
+* Item 2
 
+> Hello
+> Hello world
+> -- Adam Mickiewicz,
+
+[^123]
 ### asd ###
 
-@image()
+%image()
 
-@image(  src =   "img.jpg"  )
+%image(  src =   "img.jpg"  )
 
-@image(
+%image(
   src="img.jpg"
 )
 
-@image(src="img.jpg", margin=5, border=true)
+%image(src="img.jpg", margin=5, border=true, caption="Hello World", style="float-left")
 
-
-@image(
+%image(
   src="${name}.jpg",
   caption="q2213123",
   style="left-float"
 )
 
-@image(src = $src)
+%image(src = $src)
 
 
-
-@csv-table() {
+%csv-table() {
   id, value ; asdsadasd
    1,   1.0 ; asdadadad
    2,   4.0 ; asdasdas
@@ -55,7 +77,17 @@ $filename: " "
    5,  25.0 ; asdasd
 }
 
-@code(language="python") {
+%git-file()
+
+%code(language="python") {
   import re, sys
   sdad da d
+}
+
+%grid(caption="Hello World", geometry="2x2") {
+  @image(src="img-1.jpg", caption="Hello world")
+
+  @image(src="img-2.jpg")
+  @image(src="img-3.jpg")
+  @image(src="img-4.jpg")
 }

@@ -1,0 +1,32 @@
+"""
+Praca magisterska: Paweł Kubiak
+"""
+
+$author: "Paweł Kubiak"
+$title: "Machine Learning approach to Rongorongo glyphs system decipherement"
+
+
+; okładka
+%include(src="01-title.pdf")
+
+; podziękowania
+%include(src="02-acknowledgment.mdoc")
+
+; automatycznie generowany spis treści
+;%table_of_content(title="Spis Treści")
+%include(src="03-table-of-contents.mdoc")
+
+; dołącz wszystkie rozdziały
+%includes(src="parts/*.mdoc")
+
+; podsumowania i abstrakty
+%include(src="04-summary.mdoc")
+
+; automatycznie generowana bibliografia
+; %bibliography
+%include(src="05-bibliography.mdoc")
+
+%include(src="06-abstract.mdoc")
+%include(src="07-abstract-en.mdoc")
+
+%include(src="08-appendix.mdoc")
