@@ -28,10 +28,10 @@ HEADING = re.compile('\A(#{1,3}) (.*) \\1\\s*$\\n\\n', re.MULTILINE)
 PARAMETER = f'\s*([-a-z0-9]+)\s*=\s*({STRING}|{FLOAT}|{INTEGER}|{BOOLEAN}|{IDENTIFIER})\s*'
 PARAMETER_REGEXP = re.compile(PARAMETER)
 
-WIDGET_INLINE = f'%([-a-z0-9]+)\((\s*|{PARAMETER}(,{PARAMETER})*)\)\s*'
+WIDGET_INLINE = f'%(?P<name>[-a-z0-9]+)(\((?P<parameters>(\s*|{PARAMETER}(,{PARAMETER})*))\))?\s*'
 WIDGET_INLINE_REGEXP = re.compile(f'\A{WIDGET_INLINE}$', re.MULTILINE)
 WIDGET_LINE = f'^(  |\\t).*$\\n'
-WIDGET_WITH_BLOCK = f'\A{WIDGET_INLINE}({{\\n({WIDGET_LINE})*}})?$'
+WIDGET_WITH_BLOCK = f'\A{WIDGET_INLINE}({{\\n(?P<block>({WIDGET_LINE})*)}})?$'
 WIDGET_WITH_BLOCK_REGEXP = re.compile(WIDGET_WITH_BLOCK, re.MULTILINE)
 
 LINE = '^(?!\s+$).*$\\n'
@@ -93,11 +93,12 @@ def read_widget(text, offset):
         raise SyntaxError('Broken widget open tag at %d: \'%s\'' % (offset, text[:20]))
     else:
         match_length = len(m.group())
-        # print(">>>", m.group(2), "<<<")
-        params = PARAMETER_REGEXP.findall(m.group(2))
-        # print('--- ', params)
+        groups = m.groupdict()
+        print(groups)
+        params = PARAMETER_REGEXP.findall(groups['parameters'] or '')
+
         params = {name: read_value(value) for name, value, *_ in params}
-        return (text[match_length:], offset + match_length, ('WIDGET', m.group(1), params, None))
+        return (text[match_length:], offset + match_length, ('WIDGET', groups['name'], params, groups['block']))
 
 
 def read_value(value):

@@ -84,6 +84,28 @@ class TokenizeTestCase(unittest.TestCase):
 
         ### WIDGETS ###
 
+        # Widget require to proceded by double new line
+        ('widgets/no_new_line', SyntaxError),
+
+        # When there is no params or body, brackets can be ommited but it is not required
+        ('widgets/no_params_no_body_01', [('WIDGET', 'widget', {}, None), ('INLINE_COMMENT', 'guard')]),
+        ('widgets/no_params_no_body_02', [('WIDGET', 'widget', {}, None), ('INLINE_COMMENT', 'guard')]),
+        ('widgets/no_params_no_body_03', [('WIDGET', 'widget', {}, None), ('INLINE_COMMENT', 'guard')]),
+        ('widgets/no_params_empty_body_01', [('WIDGET', 'widget', {}, ''), ('INLINE_COMMENT', 'guard')]),
+        ('widgets/no_params_empty_body_02', SyntaxError),
+        ('widgets/no_params_empty_body_01', [('WIDGET', 'widget', {}, ''), ('INLINE_COMMENT', 'guard')]),
+
+        # Widget with params
+        ('widgets/inline_params', [('WIDGET', 'image', {'src': ('STRING', 'img.jpg'), 'margin': ('INTEGER', 5), 'border': ('BOOLEAN', True), 'pi': ('FLOAT', 3.14), 'parent': ('IDENTIFIER', 'root')}, None)]),
+        ('widgets/multiline_params', [('WIDGET', 'image', {'src': ('STRING', 'img.jpg'), 'margin': ('INTEGER', 5), 'border': ('BOOLEAN', True), 'pi': ('FLOAT', 3.14), 'parent': ('IDENTIFIER', 'root')}, None)]),
+
+        # Whitespaces doesn't metter
+        ('widgets/params_whitespaces', [('WIDGET', 'image', {'src': ('STRING', 'img.jpg')}, None)]),
+
+        # Widget can't contain duplicated parameters
+        ('widgets/params_duplicated', SyntaxError),
+
+
         ### PARAGRAPHS ###
 
         #### Strong **xx** ####
