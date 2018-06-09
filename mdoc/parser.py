@@ -1,4 +1,5 @@
 import re, sys
+# from renderers.html import HTMLRenderer
 
 
 MULTI_LINE_COMMENT = re.compile('\A"""(.*?)"""\s*?$\\n?', re.MULTILINE | re.DOTALL)
@@ -6,17 +7,17 @@ SINGLE_LINE_COMMENT = re.compile('\A([^;\n]*);(.*)$', re.MULTILINE)
 
 EMPTY_LINE = re.compile('\A\s*$\\n?', re.MULTILINE)
 
-IDENTIFIER = '\$([-a-z0-9]+)'
+IDENTIFIER = '\$([a-z0-9][a-z0-9]?|[a-z0-9][-a-z0-9]+[a-z0-9])'
 IDENTIFIER_REGEXP = re.compile(f'\A{IDENTIFIER}\Z')
 VARIABLE = re.compile(f'\A{IDENTIFIER}:\s*(.+?)\s*$\\n?', re.MULTILINE)
 
-STRING = '"(.*)"'
+STRING = '\\"(.*)\\"'
 STRING_REGEXP = re.compile(f'\A{STRING}\Z')
 
-FLOAT = '-?[0-9]+\.[0-9]+'
+FLOAT = '-?([0-9]|[1-9][0-9]+)\.[0-9]+'
 FLOAT_REGEXP = re.compile(f'\A{FLOAT}\Z')
 
-INTEGER = '-?[0-9]+'
+INTEGER = '-?([0-9]|[1-9][0-9]+)'
 INTEGER_REGEXP = re.compile(f'\A{INTEGER}\Z')
 
 BOOLEAN = '(true|false)'
@@ -27,36 +28,48 @@ HEADING = re.compile('\A(#{1,3}) (.*) \\1\\s*$\\n\\n', re.MULTILINE)
 PARAMETER = f'\s*([-a-z0-9]+)\s*=\s*({STRING}|{FLOAT}|{INTEGER}|{BOOLEAN}|{IDENTIFIER})\s*'
 PARAMETER_REGEXP = re.compile(PARAMETER)
 
-WIDGET_INLINE_REGEXP = re.compile(f'\A@([-a-z0-9]+)\((\s*|{PARAMETER}(,{PARAMETER})*)\)\s*$', re.MULTILINE)
+WIDGET_INLINE = f'%([-a-z0-9]+)\((\s*|{PARAMETER}(,{PARAMETER})*)\)\s*'
+WIDGET_INLINE_REGEXP = re.compile(f'\A{WIDGET_INLINE}$', re.MULTILINE)
+WIDGET_LINE = f'^(  |\\t).*$\\n'
+WIDGET_WITH_BLOCK = f'\A{WIDGET_INLINE}({{\\n({WIDGET_LINE})*}})?$'
+WIDGET_WITH_BLOCK_REGEXP = re.compile(WIDGET_WITH_BLOCK, re.MULTILINE)
 
-def read_multiline_comment(text, offset):
+LINE = '^(?!\s+$).*$\\n'
+PARAGRAPH = f'({LINE})+?^\s*$\\n'
+PARAGRAPH_REGEXP = re.compile(f'\A{PARAGRAPH}', re.MULTILINE)
+
+
+def read_block_comment(text, offset):
     if not text.startswith('"""'):
         return None
 
     m = MULTI_LINE_COMMENT.match(text)
     if m is None:
-        raise SyntaxError("Broken multi line comment at %d" % (offset, ))
+        raise SyntaxError("Broken block comment at %d" % (offset, ))
     match_length = len(m.group())
 
-    return (text[match_length:], offset + match_length, ('MULTILINE_COMMENT', m.group(1)))
+    return (text[match_length:], offset + match_length, ('BLOCK_COMMENT', m.group(1).strip()))
 
 
-def read_singleline_comment(text, offset):
+def read_inline_comment(text, offset):
     m = SINGLE_LINE_COMMENT.match(text)
     if m is None:
         return None
 
     match_length = len(m.group())
-    return (m.group(1) + ' '*(len(m.group(2))+1) + text[match_length:], offset, ('SINGLE_LINE_COMMENT', m.group(2)))
+    return (m.group(1) + ' '*(len(m.group(2))+1) + text[match_length:], offset, ('INLINE_COMMENT', m.group(2).strip()))
 
 
 def read_empty_line(text, offset):
+    """
+    Empty line doesn't produce any tokens
+    """
     m = EMPTY_LINE.match(text)
     if m is None:
         return None
 
     match_length = len(m.group())
-    return (text[match_length:], offset + match_length, ('EMPTY_LINE', ))
+    return (text[match_length:], offset + match_length, None)
 
 
 def read_heading(text, offset):
@@ -66,24 +79,23 @@ def read_heading(text, offset):
     if m is None:
         raise SyntaxError('Broken heading at %d: \'%s\'' % (offset, text[:20]))
     match_length = len(m.group())
-    return (text[match_length:], offset + match_length, ('HEADING', len(m.group(1)), m.group(2)))
+    return (text[match_length:], offset + match_length, ('HEADING', len(m.group(1)), m.group(2).strip()))
 
 def read_widget(text, offset):
     """
 
     ('WIDGET', <name>, <params>, <block>)
     """
-    if not text.startswith('@'):
+    if not text.startswith('%'):
         return None
-    m = WIDGET_INLINE_REGEXP.match(text)
+    m = WIDGET_WITH_BLOCK_REGEXP.match(text)
     if m is None:
         raise SyntaxError('Broken widget open tag at %d: \'%s\'' % (offset, text[:20]))
     else:
         match_length = len(m.group())
-        print(">>>", m.group(2), "<<<")
+        # print(">>>", m.group(2), "<<<")
         params = PARAMETER_REGEXP.findall(m.group(2))
-        print('--- ', params)
-
+        # print('--- ', params)
         params = {name: read_value(value) for name, value, *_ in params}
         return (text[match_length:], offset + match_length, ('WIDGET', m.group(1), params, None))
 
@@ -104,7 +116,7 @@ def read_value(value):
     m = IDENTIFIER_REGEXP.match(value)
     if m: return ('IDENTIFIER', m.group(1))
 
-    SyntaxError('Broken variable value at %d: %s' % (-1, value))
+    raise SyntaxError('Broken variable value at %d: %s' % (-1, value))
 
 
 def read_variable(text, offset):
@@ -117,17 +129,29 @@ def read_variable(text, offset):
     name, value = m.group(1), m.group(2)
     match_length = len(m.group())
 
-    return (text[match_length:], offset + match_length, ('VARIABLE', name, *read_value(value)))
+    return (text[match_length:], offset + match_length, ('VARIABLE', name, read_value(value)))
 
 
-def parse(text):
+def read_paragraph(text, offset):
+    m = PARAGRAPH_REGEXP.match(text)
+    if not m:
+        return None
+    match_length = len(m.group())
+    return (text[match_length:], offset + match_length, ('PARAGRAPH', m.group()))
+
+
+def tokenize(text):
+    """
+    Parse `text` into list of tokens.
+    """
     readers = [
-        read_multiline_comment,
-        read_singleline_comment,
+        read_block_comment,
+        read_inline_comment,
+        read_empty_line,
         read_variable,
         read_heading,
         read_widget,
-        read_empty_line
+        read_paragraph
     ]
     offset = 0
     tokens = []
@@ -142,10 +166,12 @@ def parse(text):
                 break
         else:
             raise SyntaxError("Unknown syntax at %d: '%s'" % (offset, text[:20]))
-        print(token)
+        # print(token)
     return tokens
 
 
 if __name__ == '__main__':
     with open(sys.argv[1]) as f:
-        parse(f.read())
+        tokens = tokenize(f.read())
+        print(tokens)
+        HTMLRenderer.render()
